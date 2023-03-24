@@ -1,31 +1,13 @@
-# from IPython.display import HTML
-# from IPython import display as ipythondisplay
 import numpy as np
-# import matplotlib.pyplot as plt
-# import matplotlib
 import random
 import math
-# import io
-# import glob
-# import base64
 import gym
 from gym import logger as gymlogger
-# from gym.wrappers import RecordVideo
 
 gymlogger.set_level(40)  # error only
 
-# def show_video():
-#     mp4list = glob.glob('video/*.mp4')
-#     if len(mp4list) > 0:
-#         mp4 = mp4list[0]
-#         video = io.open(mp4, 'r+b').read()
-#         encoded = base64.b64encode(video)
-#         ipythondisplay.display(HTML(data='''<video alt="test" autoplay 
-#                 loop controls style="height: 400px;">
-#                 <source src="data:video/mp4;base64,{0}" type="video/mp4" />
-#              </video>'''.format(encoded.decode('ascii'))))
-#     else:
-#         print("Could not find video")
+
+# We use this file to test, then transfer over to notebook
 
 env = gym.make("CartPole-v1")
 
@@ -83,20 +65,15 @@ def policy(q, observation, episode_no):
 
     return action
 
-def q_learning_trainer(episodes=1000,
+def q_learning_trainer(episodes = 5000,
                        no_bins = 10,
-                       render_to_screen=False,
-                       is_google_colab = False,
                        run_limit=120000,
-                       terminate_on_percentage_score = (True, 0.5)):
-    print(f"init trainer with, episode = {episodes}, no_bins = {no_bins}, render_to_screen = {render_to_screen}")
+                       terminate_on_percentage_score = (False, 0.5)):
+    print(f"init trainer with, episode = {episodes}, no_bins = {no_bins}")
     
     bins, qt = generate_q_table(no_bins=no_bins)
 
     print(f"Table shape: {qt.shape}")
-
-    if is_google_colab:
-        print("Running on google colab, turning on custom renderer")
 
     episode = 0
     avg = 0
@@ -110,7 +87,7 @@ def q_learning_trainer(episodes=1000,
 
         # keep stepping t+1 into the future until done
         # which happens when it fails
-        while not done:
+        while not done:                
             action = policy(qt, observation_discrete, episode_no=episode)
             new_obs, new_reward, done, _ = env.step(action)
             future_obs = round_toNearestBin(new_obs, bins)
@@ -130,12 +107,9 @@ def q_learning_trainer(episodes=1000,
             # track episode rewards
             reward_episode += new_reward
             
-            if render_to_screen:
-                env.render()
-
         avg = ((avg * (episode)) + reward_episode) / (episode + 1)
 
-        interval_avg = ((interval_avg * (episode%1000)) + reward_episode) / (episode + 1 %1000)
+        interval_avg += reward_episode
 
         if reward_episode == 500.0:
             fullscore_episodes_in_interval += 1
@@ -147,22 +121,21 @@ def q_learning_trainer(episodes=1000,
         # print logs
         # reset interval avg and fullscore in interval
         if episode % 1000 == 0:
+            if episode != 0:
+                interval_avg /= 1000
             print(f"Evaluating episode: {episode}, episode_reward: {reward_episode}, avg_so_far: {avg}, interval_avg: {interval_avg}, explore_r: {exploration_rate(episode)}, 500_in_interval: {fullscore_episodes_in_interval}")
             fullscore_episodes_in_interval = 0
             interval_avg = 0
         
         episode += 1
   
-    if render_to_screen:
-      env.close()
-
     return qt, bins
 
 def q_learning_agent(qt, obs, bins):
     return np.argmax(qt[round_toNearestBin(obs, bins)])
 
-def run_n_trained(qt, bins, render_to_screen = False, is_google_colab = False, n = 1):
-
+def run_n_trained(qt, bins, render_to_screen = False, n = 1):
+    res = np.zeros(n)
     for i in range(n):
         observation = env.reset()
         ep_reward = 0    
@@ -174,18 +147,20 @@ def run_n_trained(qt, bins, render_to_screen = False, is_google_colab = False, n
             action = q_learning_agent(qt, observation, bins) 
             observation, reward, done, _= env.step(action)
             ep_reward += reward
-    
-        print(f"Trained episode: {i}, run reward: {ep_reward}")
+
+        res[i] = ep_reward
 
     if render_to_screen:
-      env.close()
+        env.close()
+    
+    return res
 
 def main():
-    q, bins = q_learning_trainer(episodes = 1000,
-                                 no_bins=10,
-                                 render_to_screen=False)
-                                 
-    # print(f"Avg score: {np.average(rewards)} over {len(rewards)} episodes")
-    run_n_trained(q, bins, render_to_screen = True, n = 5)
-
+    q, bins = q_learning_trainer(episodes = 5000, no_bins=10)
+    res = run_n_trained(q, bins, render_to_screen = False, n = 100)
+    avg = np.average(res)
+    
+    print(f"Avg: {avg}")
+    res = run_n_trained(q, bins, render_to_screen = True, n = 1)
+    print(res)
 main()
