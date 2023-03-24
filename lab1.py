@@ -42,11 +42,6 @@ def generate_discrete_bins(no_bins=10, dims=4, no_actions=2):
 print(generate_discrete_bins().shape)
 
 def generate_q_table(no_bins = 10):
-
-    # since observation is in the format [pos, velocity, angle, angular, velocity]
-    # we can create 4 bins for each type and store them in an array
-    # the bounds we take from the problem statement
-
     no_dbins = no_bins
     bins = np.array([
         make_discrete(-4.8, 4.8, no_dbins),
@@ -69,14 +64,14 @@ def round_toNearestBin(observation, bins):
     # its 1 based, need -1
     return pos_bin - 1, pos_vel - 1, pos_angle - 1, pos_angular_vel - 1
 
-def learning_rate(episode_no, min_rate = 0.01) -> float:
+def learning_rate(episode_no: int, min_rate = 0.01) -> float:
     # need add 1 cos episode is 0 based
     return max(min_rate, min(1.0, 1.0 - math.log10((episode_no + 1) / 50)))
 
 def discount_factor():
     return 0.995
 
-def exploration_rate(episode_no, min_rate = 0.01) -> float:
+def exploration_rate(episode_no: int, min_rate = 0.01) -> float:
     # need add 1 cos episode is 0 based
     return max(min_rate, min(1, 1.0 - math.log10((episode_no + 1) / 50)))
 
@@ -188,8 +183,7 @@ def run_n_trained(qt, bins, render_to_screen = False, is_google_colab = False, n
 def main():
     q, bins = q_learning_trainer(episodes = 1000,
                                  no_bins=10,
-                                 render_to_screen=False,
-                                 terminate_on_percentage_score=(False, 0.5))
+                                 render_to_screen=False)
                                  
     # print(f"Avg score: {np.average(rewards)} over {len(rewards)} episodes")
     run_n_trained(q, bins, render_to_screen = True, n = 5)
