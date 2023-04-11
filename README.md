@@ -4,7 +4,7 @@
 ## Team Members
 - Budi Syahiddin
 - Faiz Rosli
-- Chin Tao
+- Chin Yueh Tao
 
 ## Dependencies
 - gym==0.25.2
